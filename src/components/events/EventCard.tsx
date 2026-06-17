@@ -30,18 +30,17 @@ export function EventCard({ event }: EventCardProps) {
           />
         ) : (
           <div className="flex h-full items-center justify-center bg-amber-950/20">
-            <span className="text-4xl font-bold text-brand-gold/30">
+            <span className="text-4xl font-bold text-brand-gold/20">
               {event.title.charAt(0)}
             </span>
           </div>
         )}
 
-        {/* Badge de Categoría con desenfoque de fondo */}
         <div className="absolute left-3 top-3 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm ring-1 ring-white/10">
           {event.category}
         </div>
 
-        {/* Badge de fecha en rojo corporativo */}
+        {/* Badge de data utilizando o vermelho de destaque */}
         <div className="absolute bottom-3 left-3 rounded-lg bg-brand-red px-3 py-1.5 text-sm font-bold text-white shadow-lg">
           {formatShortDate(event.start_date)}
         </div>
@@ -72,7 +71,7 @@ export function EventCard({ event }: EventCardProps) {
           </p>
         </div>
 
-        {/* Sección de precio y botón estilizado estilo 3cket */}
+
         <div className="mt-5 flex items-center justify-between pt-3 border-t border-white/5">
           <p className="text-sm font-bold text-brand-gold">
             {available}

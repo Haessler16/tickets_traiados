@@ -22,7 +22,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   return (
     <div>
-      {/* Hero con degradado cálido ambientado en festivales rancheros */}
+      {/* Hero com um degradê suave em tons de âmbar/dourado rústico */}
       <section className="relative overflow-hidden border-b border-white/5">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-950/20 via-transparent to-transparent" />
         <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24">

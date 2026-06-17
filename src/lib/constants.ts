@@ -14,12 +14,9 @@ export const CITIES = [
   "Todas",
   "Lisboa",
   "Porto",
-  "Braga",
-  "Coimbra",
-  "Faro",
-  "Funchal",
+  "Algarve",
 ] as const;
 
 export type City = (typeof CITIES)[number];
 
-export const APP_NAME = "3cket";
+export const APP_NAME = "Traiados Portugal";

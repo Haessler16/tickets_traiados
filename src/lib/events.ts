@@ -5,8 +5,8 @@ import type { EventWithOrganizer, EventWithTickets } from "@/types/database";
 function isSupabaseConfigured(): boolean {
   return Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
-      !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("your-project")
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY &&
+    !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("your-project")
   );
 }
 
@@ -52,6 +52,7 @@ export async function getEventById(
 ): Promise<EventWithTickets | null> {
   if (!isSupabaseConfigured()) {
     const event = MOCK_EVENTS.find((e) => e.id === id);
+    console.log({ MOCK_EVENTS })
     if (!event) return null;
     return { ...event, ticket_types: getMockTicketTypes(id) };
   }

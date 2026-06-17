@@ -1,4 +1,4 @@
-# Plataforma de Eventos (Estilo 3cket)
+# Plataforma de Eventos
 
 Plataforma fullstack de bilhetes para eventos em Portugal, construída com Next.js 14+ e Supabase.
 
@@ -31,14 +31,14 @@ Abre [http://localhost:3000](http://localhost:3000). Sem Supabase configurado, a
 
 ### Tablas
 
-| Tabla | Descripción |
-|-------|-------------|
-| `profiles` | Perfiles sincronizados con auth.users |
-| `organizers` | Organizadores de eventos |
-| `events` | Eventos publicados |
-| `ticket_types` | Tipos de entrada por evento |
-| `orders` | Órdenes de compra |
-| `user_tickets` | Entradas emitidas con QR |
+| Tabla          | Descripción                           |
+| -------------- | ------------------------------------- |
+| `profiles`     | Perfiles sincronizados con auth.users |
+| `organizers`   | Organizadores de eventos              |
+| `events`       | Eventos publicados                    |
+| `ticket_types` | Tipos de entrada por evento           |
+| `orders`       | Órdenes de compra                     |
+| `user_tickets` | Entradas emitidas con QR              |
 
 RLS activado: lectura pública de eventos; usuarios solo ven sus órdenes y entradas.
 

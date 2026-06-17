@@ -1,18 +1,24 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 :root {
-  --background: #0a0a0a;
+  --background: #0b0a08;
   --foreground: #ffffff;
-  --accent: #7c3aed;
-  --accent-hover: #6d28d9;
-  --surface: rgba(255, 255, 255, 0.05);
-  --border: rgba(255, 255, 255, 0.1);
+
+  /* Cores das Bandeiras (Portugal/Brasil) + Dourado do Cartaz */
+  --brand-red: #da251d; /* Vermelho vivo de Portugal para botões e ações principais */
+  --brand-green: #009c3b; /* Verde bandeira do Brasil para elementos secundários e sucesso */
+  --brand-gold: #f2ba13; /* Dourado quente dos cartazes para realces premium e preços */
+
+  --surface: rgba(255, 252, 240, 0.03);
+  --border: rgba(255, 252, 240, 0.08);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-accent: var(--accent);
+  --color-brand-red: var(--brand-red);
+  --color-brand-green: var(--brand-green);
+  --color-brand-gold: var(--brand-gold);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -24,9 +30,9 @@ body {
 }
 
 ::selection {
-  background: rgba(124, 58, 237, 0.4);
+  background: rgba(242, 186, 19, 0.3);
 }
 
-input[type="search"]::-webkit-search-cancel-button {
+input[type='search']::-webkit-search-cancel-button {
   -webkit-appearance: none;
 }
