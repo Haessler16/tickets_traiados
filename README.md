@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Plataforma de Eventos (Estilo 3cket)
 
-## Getting Started
+Plataforma fullstack de bilhetes para eventos em Portugal, construída com Next.js 14+ e Supabase.
 
-First, run the development server:
+## Stack
+
+- **Next.js 16** (App Router, TypeScript, Server Components)
+- **Tailwind CSS 4**
+- **Supabase** (PostgreSQL + Auth)
+- **Ifthenpay** (Multibanco + MB WAY) — integração pendiente
+- **lucide-react**, **qrcode.react**
+
+## Início rápido
 
 ```bash
+npm install
+cp .env.local.example .env.local
+# Editar .env.local com credenciais Supabase
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000](http://localhost:3000). Sem Supabase configurado, a app usa dados mock.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Supabase
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Cria um projeto em [supabase.com](https://supabase.com)
+2. Executa as migrações no SQL Editor (por ordem):
+   - `supabase/migrations/001_initial_schema.sql`
+   - `supabase/migrations/002_seed_data.sql` (opcional, dados de exemplo)
+3. Copia URL e anon key para `.env.local`
 
-## Learn More
+### Tablas
 
-To learn more about Next.js, take a look at the following resources:
+| Tabla | Descripción |
+|-------|-------------|
+| `profiles` | Perfiles sincronizados con auth.users |
+| `organizers` | Organizadores de eventos |
+| `events` | Eventos publicados |
+| `ticket_types` | Tipos de entrada por evento |
+| `orders` | Órdenes de compra |
+| `user_tickets` | Entradas emitidas con QR |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+RLS activado: lectura pública de eventos; usuarios solo ven sus órdenes y entradas.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Estructura
 
-## Deploy on Vercel
+```
+src/
+├── app/                  # Páginas y rutas
+├── components/           # UI reutilizable
+├── lib/
+│   ├── supabase/         # Clientes browser/server
+│   ├── events.ts         # Capa de datos
+│   └── constants.ts
+├── types/database.ts     # Tipos TypeScript
+supabase/migrations/      # SQL schema + seed
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Próximos pasos
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [ ] Autenticación (login/registro Supabase)
+- [ ] Checkout con Ifthenpay (Multibanco + MB WAY)
+- [ ] Webhook de confirmación de pago
+- [ ] Área "Mis entradas" con QR
+- [ ] Panel de organizador
