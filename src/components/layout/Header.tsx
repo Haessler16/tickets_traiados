@@ -23,20 +23,20 @@ export function Header() {
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-8 md:flex">
+        {/* <nav className="hidden items-center gap-8 md:flex">
           <Link
             href="/"
             className="text-sm font-medium text-white/70 transition hover:text-brand-gold"
           >
             Eventos
           </Link>
-          {/* <Link
+          <Link
             href="/"
             className="text-sm font-medium text-white/70 transition hover:text-brand-gold"
           >
             Categorias
-          </Link> */}
-        </nav>
+          </Link>
+        </nav> */}
 
         <div className="flex items-center gap-3">
           <Link

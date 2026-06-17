@@ -22,7 +22,7 @@ async function seedDatabase() {
 
   // 1. Extraer y mapear organizadores únicos para evitar duplicados
   const uniqueOrganizers = Array.from(
-    new Map(MOCK_EVENTS.map(event => [event.organizers.id, event.organizers])).values()
+    new Map(MOCK_EVENTS.map(event => [event?.organizers?.id, event.organizers])).values()
   );
 
   console.log(`Carregando ${uniqueOrganizers.length} organizadores...`);
@@ -31,10 +31,10 @@ async function seedDatabase() {
     .from('organizers')
     .upsert(
       uniqueOrganizers.map(org => ({
-        id: org.id,
-        name: org.name,
-        logo_url: org.logo_url,
-        verified: org.verified
+        id: org?.id,
+        name: org?.name,
+        logo_url: org?.logo_url,
+        verified: org?.verified
       })),
       { onConflict: 'id' }
     );
