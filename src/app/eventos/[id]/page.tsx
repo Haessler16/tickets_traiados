@@ -7,6 +7,7 @@ import {
   MapPin,
   BadgeCheck,
   Ticket,
+  ShieldCheck,
 } from "lucide-react";
 import { getEventById } from "@/lib/events";
 import { formatEventDate, formatPrice, cn } from "@/lib/utils";
@@ -33,8 +34,8 @@ export default async function EventPage({ params }: EventPageProps) {
 
   return (
     <div className="pb-16">
-      {/* Banner */}
-      <div className="relative h-64 sm:h-80 lg:h-96">
+      {/* Banner de Topo */}
+      <div className="relative h-64 sm:h-80 lg:h-[450px]">
         {event.image_url ? (
           <Image
             src={event.image_url}
@@ -47,12 +48,12 @@ export default async function EventPage({ params }: EventPageProps) {
         ) : (
           <div className="h-full bg-amber-950/20" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
 
-        <div className="absolute top-4 left-4 z-10">
+        <div className="absolute top-6 left-6 z-10">
           <Link
             href="/"
-            className="flex items-center gap-2 rounded-full bg-black/60 px-4 py-2 text-sm font-medium text-white backdrop-blur-md ring-1 ring-white/10 transition hover:bg-black/80 hover:text-brand-gold"
+            className="flex items-center gap-2 rounded-full bg-black/60 px-4 py-2 text-sm font-bold text-white backdrop-blur-md ring-1 ring-white/10 transition hover:bg-black/80 hover:text-brand-gold"
           >
             <ArrowLeft className="h-4 w-4" />
             Voltar
@@ -60,25 +61,23 @@ export default async function EventPage({ params }: EventPageProps) {
         </div>
       </div>
 
-      {/* Conteúdo Principal */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="relative -mt-32 z-10 grid gap-8 lg:grid-cols-[1fr_380px]">
-          {/* Detalhes do Evento */}
-          <div className="space-y-6 rounded-2xl border border-white/5 bg-white/[0.02] p-6 backdrop-blur-xl sm:p-8">
-            <div className="space-y-3">
-              <span className="inline-flex rounded-full bg-white/5 px-3 py-1 text-xs font-medium text-brand-gold ring-1 ring-white/10">
+        <div className="relative -mt-32 z-10 grid gap-8 lg:grid-cols-[1fr_400px]">
+
+          {/* Informação do Evento */}
+          <div className="space-y-8 rounded-3xl border border-white/5 bg-white/[0.02] p-6 backdrop-blur-xl sm:p-10">
+            <div className="space-y-4">
+              <span className="inline-flex rounded-full bg-brand-gold/10 px-4 py-1 text-xs font-bold uppercase tracking-widest text-brand-gold ring-1 ring-brand-gold/20">
                 {event.category}
               </span>
-              <h1 className="text-2xl font-bold text-white sm:text-3xl lg:text-4xl">
+              <h1 className="text-3xl font-black uppercase text-white sm:text-4xl lg:text-5xl leading-tight">
                 {event.title}
               </h1>
 
               {event.organizers && (
-                <div className="flex items-center gap-2 text-sm text-white/60">
+                <div className="flex items-center gap-2 text-sm text-white/50">
                   <span>Organizado por</span>
-                  <span className="font-medium text-white">
-                    {event.organizers.name}
-                  </span>
+                  <span className="font-bold text-white">{event.organizers.name}</span>
                   {event.organizers.verified && (
                     <BadgeCheck className="h-4 w-4 text-brand-green" />
                   )}
@@ -86,95 +85,100 @@ export default async function EventPage({ params }: EventPageProps) {
               )}
             </div>
 
-            <div className="grid gap-4 rounded-xl bg-white/[0.02] p-4 ring-1 ring-white/5 sm:grid-cols-2">
-              <div className="flex items-start gap-3">
-                <Calendar className="mt-0.5 h-5 w-5 shrink-0 text-brand-gold" />
+            <div className="grid gap-6 rounded-2xl bg-white/[0.02] p-6 ring-1 ring-white/5 sm:grid-cols-2">
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-gold/10">
+                  <Calendar className="h-5 w-5 text-brand-gold" />
+                </div>
                 <div>
-                  <p className="text-sm font-medium text-white">Data e Hora</p>
-                  <p className="mt-0.5 text-xs text-white/60">
+                  <p className="text-xs font-bold uppercase tracking-widest text-white/30">Data e Hora</p>
+                  <p className="mt-1 text-sm font-medium text-white/80">
                     {formatEventDate(event.start_date)}
-                  </p>
-                  <p>ate</p>
-                  <p className="mt-0.5 text-xs text-white/60">
-                    {formatEventDate(event.end_date)}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3">
-                <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-brand-gold" />
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-gold/10">
+                  <MapPin className="h-5 w-5 text-brand-gold" />
+                </div>
                 <div>
-                  <p className="text-sm font-medium text-white">Localização</p>
-                  <p className="mt-0.5 text-xs text-white/60">{event.location}</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-white/30">Localização</p>
+                  <p className="mt-1 text-sm font-medium text-white/80">{event.location}</p>
                   <p className="text-xs text-white/40">{event.city}</p>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-3">
-              <h2 className="text-lg font-semibold text-white">Sobre o evento</h2>
-              <p className="text-sm leading-relaxed text-white/70 whitespace-pre-wrap">
-                {event.description || "Nenhuma descrição disponível para este evento."}
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold uppercase tracking-tight text-white">Sobre o evento</h2>
+              <p className="text-base leading-relaxed text-white/60 whitespace-pre-wrap">
+                {event.description}
               </p>
             </div>
           </div>
 
-          {/* Secção de Bilhetes (Sidebar) */}
-          <div className="h-fit space-y-6 rounded-2xl border border-white/5 bg-white/[0.02] p-6 backdrop-blur-xl">
-            <div>
-              <h2 className="flex items-center gap-2 text-lg font-semibold text-white">
-                <Ticket className="h-5 w-5 text-brand-gold" />
-                Bilhetes disponíveis
-              </h2>
-              <p className="mt-1 text-xs text-white/50">
-                Garante o teu lugar com segurança antes que esgote.
-              </p>
-            </div>
+          {/* Seleção de Bilhetes */}
+          <div className="lg:sticky lg:top-24 lg:self-start space-y-6">
+            <div className="rounded-3xl border border-white/5 bg-[#111009] p-6 shadow-2xl ring-1 ring-white/5 sm:p-8">
+              <div className="mb-6">
+                <h2 className="flex items-center gap-2 text-lg font-black uppercase text-white">
+                  <Ticket className="h-5 w-5 text-brand-gold" />
+                  Bilhetes
+                </h2>
+                <p className="mt-1 text-xs text-white/40 font-medium">Escolhe a tua entrada para este evento.</p>
+              </div>
 
-            <div className="divide-y divide-white/5">
-              {event.ticket_types?.map((ticket) => {
-                const remaining = ticket.stock_total - ticket.stock_sold;
-                const soldOut = remaining <= 0;
+              <div className="space-y-4">
+                {event.ticket_types?.map((ticket) => {
+                  const remaining = ticket.stock_total - ticket.stock_sold;
+                  const soldOut = remaining <= 0;
 
-                return (
-                  <div
-                    key={ticket.id}
-                    className={cn(
-                      "flex items-center justify-between py-4 first:pt-0 last:pb-0",
-                      soldOut && "opacity-50"
-                    )}
-                  >
-                    <div>
-                      <p className="font-medium text-white">{ticket.name}</p>
-                      <p className="text-xs text-white/50">
-                        {soldOut
-                          ? "Esgotado"
-                          : `${remaining} disponíve${remaining === 1 ? "l" : "is"}`}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-brand-gold">
-                        {formatPrice(ticket.price)}
-                      </p>
-                      <button
-                        type="button"
-                        disabled={soldOut}
-                        className="mt-1 rounded-lg bg-brand-red px-3 py-1 text-xs font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/40 shadow-sm shadow-brand-red/10"
+                  return (
+                    <div
+                      key={ticket.id}
+                      className={cn(
+                        "group flex flex-col gap-4 rounded-2xl border border-white/5 bg-white/[0.02] p-5 transition hover:border-brand-gold/20",
+                        soldOut && "opacity-50 grayscale"
+                      )}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="font-bold text-white text-base">{ticket.name}</p>
+                          <p className="text-xs font-medium text-white/40">
+                            {soldOut
+                              ? "Esgotado"
+                              : `${remaining} disponíveis`}
+                          </p>
+                        </div>
+                        <p className="text-lg font-black text-brand-gold">
+                          {formatPrice(ticket.price)}
+                        </p>
+                      </div>
+
+                      <Link
+                        href={soldOut ? "#" : `/checkout/${ticket.id}?eventId=${event.id}`}
+                        className={cn(
+                          "flex w-full items-center justify-center rounded-xl py-3 text-xs font-black uppercase tracking-widest transition shadow-lg",
+                          soldOut
+                            ? "cursor-not-allowed bg-white/10 text-white/30"
+                            : "bg-brand-red text-white hover:bg-red-700 shadow-brand-red/20"
+                        )}
                       >
                         {soldOut ? "Esgotado" : "Comprar"}
-                      </button>
+                      </Link>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
 
-            {(!event.ticket_types || event.ticket_types.length === 0) && (
-              <p className="text-sm text-white/50">
-                Bilhetes indisponíveis de momento.
-              </p>
-            )}
+              <div className="mt-6 flex items-center gap-2 rounded-xl bg-brand-green/5 p-3 text-[10px] font-medium text-brand-green/60 ring-1 ring-brand-green/10">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Pagamento seguro e bilhete digital imediato.
+              </div>
+            </div>
           </div>
+
         </div>
       </div>
     </div>

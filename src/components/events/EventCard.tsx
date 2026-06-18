@@ -71,7 +71,6 @@ export function EventCard({ event }: EventCardProps) {
           </p>
         </div>
 
-
         <div className="mt-5 flex items-center justify-between pt-3 border-t border-white/5">
           <p className="text-sm font-bold text-brand-gold">
             {available}
