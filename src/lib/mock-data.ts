@@ -7,7 +7,7 @@ export const MOCK_EVENTS: EventWithOrganizer[] = [
     description:
       "O maior festival de música em Portugal. Três dias de artistas internacionais e nacionais.",
     image_url:
-      "https://images.unsplash.com/photo-1459749411175-04bf3852ceef?w=800&q=80",
+      "https://mmcfkordrwspwdbgmbmn.supabase.co/storage/v1/object/sign/imgs/IMG_0120.jpg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8yYTE4N2M0Yi04M2VmLTRlNzQtOTM4OS1jMDBkMGE0NDM0MmYiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWdzL0lNR18wMTIwLmpwZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODE3MjgwMjYsImV4cCI6MTgxMzI2NDAyNn0.UmbWwnG6cXePufViO6-eplvCaaVd-FaI_hFTv30zXg0",
     category: "Música",
     start_date: "2026-07-09T14:00:00.000Z",
     end_date: "2026-07-11T23:59:00.000Z",
@@ -73,7 +73,7 @@ export const MOCK_EVENTS: EventWithOrganizer[] = [
     description:
       "Arte, performance e cultura contemporânea nos jardins do museu.",
     image_url:
-      "https://images.unsplash.com/photo-1460661419208-fd791e0e8748?w=800&q=80",
+      "https://mmcfkordrwspwdbgmbmn.supabase.co/storage/v1/object/sign/imgs/IMG_0002.jpg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8yYTE4N2M0Yi04M2VmLTRlNzQtOTM4OS1jMDBkMGE0NDM0MmYiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWdzL0lNR18wMDAyLmpwZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODE3Mjc2MzAsImV4cCI6MTgxMzI2MzYzMH0.eJ_pGkEyf1X2BQ1XTqg9lwtSfzGyGpXnYxgtYVpVERA",
     category: "Cultura",
     start_date: "2026-06-28T10:00:00.000Z",
     end_date: "2026-06-29T22:00:00.000Z",
