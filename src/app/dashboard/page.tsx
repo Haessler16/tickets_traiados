@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   Ticket,
@@ -8,28 +8,70 @@ import {
   CheckCircle2,
   Copy,
   Smartphone,
-  CreditCard,
+  // CreditCard,
   ExternalLink,
   AlertCircle,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  QrCode,
+  Download,
+  ChevronDown,
+  ChevronUp,
+  BadgeCheck,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-// Mock data base de billetes comprados o pendientes
-const MOCK_USER_TICKETS = [
+// ─── Tipos ────────────────────────────────────────────────────────────────────
+
+type TicketStatus =
+  | "PAID"
+  | "PENDING_MULTIBANCO"
+  | "PENDING_MBWAY"
+  | "CANCELLED"
+  | "EXPIRED";
+
+interface PaymentDetails {
+  entity?: string;
+  reference?: string;
+  amount?: string;
+  expiresAt?: string;
+  phone?: string;
+  transactionId?: string;
+}
+
+interface UserTicket {
+  id: string;
+  eventTitle: string;
+  eventId: string;
+  city: string;
+  date: string;
+  ticketName: string;
+  status: TicketStatus;
+  price: number;
+  code?: string;
+  qrData?: string; // dados para o QR (em prod: URL ou JWT do bilhete)
+  paymentDetails?: PaymentDetails;
+}
+
+// ─── Mock data (substituir por query Supabase real) ───────────────────────────
+
+const MOCK_USER_TICKETS: UserTicket[] = [
   {
     id: "order_01",
     eventTitle: "Festival NOS Alive 2026",
+    eventId: "event_alive",
     city: "Lisboa",
     date: "09 Jul 2026",
     ticketName: "Passe Geral 3 Dias",
     status: "PAID",
     price: 189.0,
     code: "TR-9832-ALIVE",
+    qrData: "TR-9832-ALIVE|Festival NOS Alive 2026|Passe Geral 3 Dias|189.00",
   },
   {
     id: "order_02",
     eventTitle: "Grande Rodeio Sertanejo",
+    eventId: "event_rodeio",
     city: "Porto",
     date: "14 Ago 2026",
     ticketName: "Bilhete VIP Fan Zone",
@@ -37,14 +79,15 @@ const MOCK_USER_TICKETS = [
     price: 75.0,
     paymentDetails: {
       entity: "24422",
-      reference: "123 456 789",
+      reference: "123456789",
       amount: "75.00",
-      expiresAt: "24h",
+      expiresAt: "17 Jun 2026 às 23:59",
     },
   },
   {
     id: "order_03",
     eventTitle: "Serralves em Festa",
+    eventId: "event_serralves",
     city: "Porto",
     date: "28 Jun 2026",
     ticketName: "Entrada Diária",
@@ -52,244 +95,490 @@ const MOCK_USER_TICKETS = [
     price: 15.0,
     paymentDetails: {
       phone: "912 345 678",
+      transactionId: "mbw_tx_abc123",
     },
   },
 ];
 
-export default function DashboardPage() {
-  // Inicializamos como undefined para simular el comportamiento real antes de la petición externa
-  const [tickets, setTickets] = useState<typeof MOCK_USER_TICKETS | undefined>(undefined);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
-  useEffect(() => {
-    async function loadTickets() {
-      try {
-        setLoading(true);
-        setError(null);
+function formatPrice(v: number) {
+  return new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(v);
+}
 
-        // TODO: Integración real con Supabase
-        // const { data, error } = await supabase.from('orders').select('*');
-        // if (error) throw error;
+function formatReference(ref: string) {
+  return ref.replace(/(\d{3})(\d{3})(\d{3})/, "$1 $2 $3");
+}
 
-        // Simulamos un retraso de red para ver el estado de carga
-        await new Promise((resolve) => setTimeout(resolve, 1200));
+const STATUS_LABEL: Record<TicketStatus, string> = {
+  PAID: "Confirmado",
+  PENDING_MULTIBANCO: "Aguarda Pagamento",
+  PENDING_MBWAY: "Aguarda MB WAY",
+  CANCELLED: "Cancelado",
+  EXPIRED: "Expirado",
+};
 
-        // Cambiar por data si se conecta con Supabase. De momento forzamos la carga del mock.
-        setTickets(MOCK_USER_TICKETS);
-      } catch (err) {
-        setError("Não foi possível carregar os teus bilhetes. Por favor, tenta novamente.");
-      } finally {
-        setLoading(false);
-      }
+const STATUS_COLOR: Record<TicketStatus, string> = {
+  PAID: "text-[#1a6b2f] bg-[#1a6b2f]/10 ring-[#1a6b2f]/20",
+  PENDING_MULTIBANCO: "text-amber-400 bg-amber-500/10 ring-amber-500/20",
+  PENDING_MBWAY: "text-[#c41e3a] bg-[#c41e3a]/10 ring-[#c41e3a]/20",
+  CANCELLED: "text-white/30 bg-white/5 ring-white/10",
+  EXPIRED: "text-white/30 bg-white/5 ring-white/10",
+};
+
+const STATUS_ICON: Record<TicketStatus, React.ReactNode> = {
+  PAID: <CheckCircle2 className="h-3 w-3" />,
+  PENDING_MULTIBANCO: <Clock className="h-3 w-3 animate-pulse" />,
+  PENDING_MBWAY: <Smartphone className="h-3 w-3 animate-pulse" />,
+  CANCELLED: <AlertCircle className="h-3 w-3" />,
+  EXPIRED: <Clock className="h-3 w-3" />,
+};
+
+// ─── Sub-componente: Bilhete expandido ───────────────────────────────────────
+
+function TicketCard({ ticket }: { ticket: UserTicket }) {
+  const [expanded, setExpanded] = useState(ticket.status !== "PAID");
+  const [copied, setCopied] = useState<string | null>(null);
+  const [mbwayStatus, setMbwayStatus] = useState<"pending" | "paid" | "error">("pending");
+  const [checkingMbway, setCheckingMbway] = useState(false);
+
+  function copyToClipboard(value: string, key: string) {
+    navigator.clipboard.writeText(value.replace(/\s/g, ""));
+    setCopied(key);
+    setTimeout(() => setCopied(null), 2000);
+  }
+
+  async function checkMbwayStatus() {
+    if (!ticket.paymentDetails?.transactionId) return;
+    setCheckingMbway(true);
+    try {
+      const res = await fetch(
+        `/api/payment/status?transactionId=${ticket.paymentDetails.transactionId}`
+      );
+      const data = await res.json();
+      if (data.isPaid) setMbwayStatus("paid");
+      else if (data.isError || data.isCancelled) setMbwayStatus("error");
+    } catch {
+      // ignora erros de rede pontuais
+    } finally {
+      setCheckingMbway(false);
     }
-
-    loadTickets();
-  }, []);
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text.replace(/\s/g, ""));
-    alert("Copiado para a área de transferência!");
-  };
-
-  const handleRetry = () => {
-    setError(null);
-    setLoading(true);
-    // Simulación de reintento de carga
-    setTimeout(() => {
-      setTickets(MOCK_USER_TICKETS);
-      setLoading(false);
-    }, 1000);
-  };
+  }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      {/* Perfil Header */}
-      <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-white/5 pb-6">
+    <div
+      className={cn(
+        "overflow-hidden rounded-2xl border transition-all",
+        ticket.status === "PAID"
+          ? "border-[#1a6b2f]/15 bg-[#0e120e]"
+          : ticket.status === "PENDING_MULTIBANCO"
+            ? "border-amber-800/20 bg-[#110e08]"
+            : ticket.status === "PENDING_MBWAY"
+              ? "border-[#c41e3a]/15 bg-[#110a0a]"
+              : "border-white/[0.04] bg-[#0d0c08]"
+      )}
+    >
+      {/* Linha de cor no topo */}
+      <div
+        className={cn(
+          "h-0.5 w-full",
+          ticket.status === "PAID"
+            ? "bg-gradient-to-r from-[#1a6b2f] to-transparent"
+            : ticket.status === "PENDING_MULTIBANCO"
+              ? "bg-gradient-to-r from-amber-600/60 to-transparent"
+              : ticket.status === "PENDING_MBWAY"
+                ? "bg-gradient-to-r from-[#c41e3a]/60 to-transparent"
+                : "bg-white/[0.04]"
+        )}
+      />
+
+      {/* Header do card */}
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="flex w-full items-start gap-4 p-5 text-left"
+      >
+        {/* Ícone status */}
+        <div
+          className={cn(
+            "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
+            ticket.status === "PAID"
+              ? "bg-[#1a6b2f]/15"
+              : ticket.status.startsWith("PENDING")
+                ? "bg-amber-500/10"
+                : "bg-white/5"
+          )}
+        >
+          <Ticket
+            className={cn(
+              "h-4 w-4",
+              ticket.status === "PAID"
+                ? "text-[#1a6b2f]"
+                : ticket.status.startsWith("PENDING")
+                  ? "text-[#d4a017]"
+                  : "text-white/20"
+            )}
+          />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <span className="text-xs text-white/35">{ticket.date} · {ticket.city}</span>
+            {/* Badge de status */}
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ring-1",
+                STATUS_COLOR[ticket.status]
+              )}
+            >
+              {STATUS_ICON[ticket.status]}
+              {STATUS_LABEL[ticket.status]}
+            </span>
+          </div>
+          <h3 className="text-base font-bold text-white leading-snug">{ticket.eventTitle}</h3>
+          <p className="mt-0.5 text-sm text-white/50">{ticket.ticketName}</p>
+        </div>
+
+        <div className="shrink-0 text-right ml-3">
+          <span className="text-base font-black text-[#d4a017]">{formatPrice(ticket.price)}</span>
+          <div className="mt-1">
+            {expanded ? (
+              <ChevronUp className="ml-auto h-3.5 w-3.5 text-white/20" />
+            ) : (
+              <ChevronDown className="ml-auto h-3.5 w-3.5 text-white/20" />
+            )}
+          </div>
+        </div>
+      </button>
+
+      {/* Conteúdo expandido */}
+      {expanded && (
+        <div className="border-t border-white/[0.04] px-5 pb-5 pt-4">
+
+          {/* ── BILHETE PAGO: Código + QR ── */}
+          {ticket.status === "PAID" && ticket.code && (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                {/* QR Code (placeholder visual) */}
+                <div className="flex flex-col items-center justify-center rounded-xl bg-white p-4 sm:w-32 sm:h-32">
+                  <QrCode className="h-20 w-20 text-[#0d0c08]" />
+                  <p className="mt-1 text-[8px] font-bold text-[#0d0c08]/50 uppercase tracking-wider">
+                    Bilhete QR
+                  </p>
+                </div>
+                {/* Detalhes */}
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/25">
+                      Código de Entrada
+                    </p>
+                    <p className="mt-1 font-mono text-base font-black tracking-wider text-white">
+                      {ticket.code}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(ticket.code!, "code")}
+                      className="flex items-center gap-1.5 rounded-lg bg-white/5 px-3 py-1.5 text-xs font-medium text-white/50 transition hover:bg-[#d4a017]/10 hover:text-[#d4a017]"
+                    >
+                      {copied === "code" ? (
+                        <><CheckCircle2 className="h-3 w-3 text-[#1a6b2f]" /> Copiado</>
+                      ) : (
+                        <><Copy className="h-3 w-3" /> Copiar código</>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      className="flex items-center gap-1.5 rounded-lg bg-[#1a6b2f]/10 px-3 py-1.5 text-xs font-medium text-[#1a6b2f] ring-1 ring-[#1a6b2f]/20 transition hover:bg-[#1a6b2f]/20"
+                    >
+                      <Download className="h-3 w-3" /> Descarregar PDF
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <p className="text-[11px] text-white/25 flex items-center gap-1.5">
+                <BadgeCheck className="h-3 w-3 text-[#1a6b2f]" />
+                Bilhete verificado · Apresenta o QR na entrada do evento
+              </p>
+            </div>
+          )}
+
+          {/* ── MULTIBANCO PENDENTE ── */}
+          {ticket.status === "PENDING_MULTIBANCO" && ticket.paymentDetails && (
+            <div className="space-y-3">
+              <p className="text-xs text-white/40">
+                Efectua o pagamento na caixa ATM ou no teu Homebanking com os dados abaixo.
+              </p>
+
+              <div className="overflow-hidden rounded-xl ring-1 ring-[#d4a017]/20">
+                <div className="h-0.5 bg-gradient-to-r from-[#1a6b2f] via-[#d4a017] to-[#c41e3a]" />
+                <div className="space-y-px bg-[#111009] p-1">
+                  {[
+                    { label: "Entidade", value: ticket.paymentDetails.entity!, key: "entity" },
+                    { label: "Referência", value: formatReference(ticket.paymentDetails.reference!), key: "ref" },
+                    { label: "Valor", value: `${ticket.paymentDetails.amount}€`, key: "amount", noCopy: true },
+                  ].map(({ label, value, key, noCopy }) => (
+                    <div key={key} className="flex items-center justify-between rounded-lg bg-white/[0.02] p-3">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-white/25">{label}</p>
+                        <p className="mt-0.5 font-mono text-sm font-black text-white">{value}</p>
+                      </div>
+                      {!noCopy && (
+                        <button
+                          type="button"
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          onClick={() => copyToClipboard((ticket.paymentDetails as any)![key === "ref" ? "reference" : (key)]!, key)}
+                          className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-1.5 text-[10px] font-medium text-white/40 transition hover:bg-[#d4a017]/10 hover:text-[#d4a017]"
+                        >
+                          {copied === key ? (
+                            <CheckCircle2 className="h-3 w-3 text-[#1a6b2f]" />
+                          ) : (
+                            <Copy className="h-3 w-3" />
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {ticket.paymentDetails.expiresAt && (
+                <p className="flex items-center gap-1.5 text-xs text-white/30">
+                  <Clock className="h-3 w-3" />
+                  Referência válida até{" "}
+                  <span className="font-semibold text-amber-500/60">{ticket.paymentDetails.expiresAt}</span>
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* ── MB WAY PENDENTE ── */}
+          {ticket.status === "PENDING_MBWAY" && ticket.paymentDetails && (
+            <div className="space-y-3">
+              {mbwayStatus === "paid" ? (
+                <div className="flex items-center gap-3 rounded-xl bg-[#1a6b2f]/10 p-4 ring-1 ring-[#1a6b2f]/20">
+                  <CheckCircle2 className="h-5 w-5 shrink-0 text-[#1a6b2f]" />
+                  <p className="text-sm font-semibold text-white/80">
+                    Pagamento confirmado! Actualiza a página para ver o teu bilhete.
+                  </p>
+                </div>
+              ) : mbwayStatus === "error" ? (
+                <div className="flex items-center gap-3 rounded-xl bg-[#c41e3a]/10 p-4 ring-1 ring-[#c41e3a]/20">
+                  <AlertCircle className="h-5 w-5 shrink-0 text-[#c41e3a]" />
+                  <p className="text-sm text-white/60">
+                    Pagamento recusado ou cancelado. Podes tentar novamente.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 rounded-xl bg-[#c41e3a]/5 p-4 ring-1 ring-[#c41e3a]/15">
+                  <Smartphone className="h-5 w-5 shrink-0 animate-pulse text-[#c41e3a]" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-white/80">
+                      Notificação enviada para{" "}
+                      <span className="text-white">{ticket.paymentDetails.phone}</span>
+                    </p>
+                    <p className="text-xs text-white/40">
+                      Abre a App MB WAY e autoriza o pagamento de{" "}
+                      <span className="font-bold text-[#d4a017]">{formatPrice(ticket.price)}</span>
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={checkMbwayStatus}
+                  disabled={checkingMbway || mbwayStatus !== "pending"}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-white/[0.03] py-2.5 text-xs font-semibold text-white/50 ring-1 ring-white/[0.06] transition hover:text-white disabled:opacity-40"
+                >
+                  {checkingMbway ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  )}
+                  Verificar estado
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Link para ver evento ── */}
+          <div className="mt-4 flex items-center justify-end">
+            <Link
+              href={`/eventos/${ticket.eventId}`}
+              className="flex items-center gap-1 text-[11px] text-white/20 transition hover:text-[#d4a017]/60"
+            >
+              Ver evento <ExternalLink className="h-3 w-3" />
+            </Link>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Componente principal ─────────────────────────────────────────────────────
+
+export default function DashboardPage() {
+  const [tickets, setTickets] = useState<UserTicket[] | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // 1. Declaras la función fuera con useCallback para que la use el botón y el useEffect
+  const loadTickets = useCallback(async () => {
+    try {
+      // TODO: Integración real con Supabase
+      // const { data, error } = await supabase.from('orders').select('*');
+      // if (error) throw error;
+
+      // Simulación de retraso de red
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+
+      setTickets(MOCK_USER_TICKETS);
+    } catch (err) {
+      setError("Não foi possível carregar os teus bilhetes. Por favor, tenta novamente.");
+    } finally {
+      setLoading(false);
+    }
+  }, []); // Array vacío porque no depende de ninguna variable externa que cambie
+
+  // 2. El useEffect del montaje inicial
+  useEffect(() => {
+    // Apagamos los estados de carga/error aquí de forma segura
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true);
+    setError(null);
+
+    loadTickets();
+  }, [loadTickets]); // loadTickets es una dependencia segura gracias a useCallback
+
+  // 3. El botón ahora puede reutilizar la función perfectamente
+  const handleRetry = () => {
+    setLoading(true);
+    setError(null);
+    loadTickets();
+  };
+
+  const paid = tickets?.filter((t) => t.status === "PAID") ?? [];
+  const pending = tickets?.filter((t) => t.status.startsWith("PENDING")) ?? [];
+  const other = tickets?.filter((t) => ["CANCELLED", "EXPIRED"].includes(t.status)) ?? [];
+
+  return (
+    <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
+      {/* Header da área pessoal */}
+      <div className="mb-8 flex flex-col gap-4 border-b border-white/[0.05] pb-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white sm:text-3xl">A minha Área</h1>
-          <p className="mt-1 text-sm text-white/50">
-            Gerencia os teus bilhetes e acompanha o estado dos teus pagamentos.
+          <div className="flex items-center gap-2 mb-1">
+            <div className="h-4 w-1 rounded-full bg-[#c41e3a]" />
+            <p className="text-xs font-bold uppercase tracking-widest text-white/40">
+              Área Pessoal
+            </p>
+          </div>
+          <h1 className="text-2xl font-black uppercase text-white">A minha conta</h1>
+          <p className="mt-1 text-sm text-white/40">
+            Gerencia os teus bilhetes e pagamentos pendentes.
           </p>
         </div>
-        <div className="flex items-center gap-3 rounded-xl bg-white/[0.02] p-3 ring-1 ring-white/5">
-          <div className="h-10 w-10 rounded-full bg-brand-gold/10 flex items-center justify-center text-brand-gold font-bold">
+        <div className="flex items-center gap-3 rounded-xl bg-[#111009] p-3 ring-1 ring-white/[0.05]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#d4a017]/10 text-sm font-black text-[#d4a017]">
             U
           </div>
           <div>
-            <p className="text-sm font-medium text-white">Utilizador Traiados</p>
-            <p className="text-xs text-white/40">user@traiados.pt</p>
+            <p className="text-sm font-bold text-white">Utilizador Traiados</p>
+            <p className="text-xs text-white/35">user@traiados.pt</p>
           </div>
         </div>
       </div>
 
-      {/* 1. ESTADO DE CARGA (LOADING) */}
+      {/* Loading */}
       {loading && (
-        <div className="flex flex-col items-center justify-center py-20 rounded-2xl border border-white/5 bg-white/[0.01]">
-          <Loader2 className="h-8 w-8 text-brand-gold animate-spin mb-4" />
-          <p className="text-sm text-white/60">A carregar os teus bilhetes...</p>
+        <div className="flex flex-col items-center justify-center py-20 rounded-2xl border border-white/[0.04] bg-white/[0.01]">
+          <Loader2 className="h-7 w-7 animate-spin text-[#d4a017] mb-3" />
+          <p className="text-sm text-white/40">A carregar os teus bilhetes...</p>
         </div>
       )}
 
-      {/* 2. ESTADO DE ERROR */}
+      {/* Erro */}
       {!loading && error && (
-        <div className="flex flex-col items-center justify-center py-16 px-4 text-center rounded-2xl border border-brand-red/20 bg-brand-red/[0.02]">
-          <AlertCircle className="h-10 w-10 text-brand-red mb-4" />
-          <h3 className="text-lg font-semibold text-white">Erro de conexão</h3>
-          <p className="mt-2 text-sm text-white/50 max-w-md">{error}</p>
+        <div className="flex flex-col items-center justify-center py-16 rounded-2xl border border-[#c41e3a]/15 bg-[#c41e3a]/[0.02]">
+          <AlertCircle className="h-8 w-8 text-[#c41e3a] mb-3" />
+          <h3 className="text-base font-bold text-white">Erro de conexão</h3>
+          <p className="mt-1 text-sm text-white/40 max-w-sm text-center">{error}</p>
           <button
             onClick={handleRetry}
-            className="mt-6 flex items-center gap-2 rounded-xl bg-white/5 px-4 py-2.5 text-sm font-medium text-white ring-1 ring-white/10 hover:bg-white/10 transition"
+            className="mt-5 flex items-center gap-2 rounded-xl bg-white/[0.03] px-5 py-2.5 text-sm font-semibold text-white/60 ring-1 ring-white/[0.06] transition hover:text-white"
           >
             <RefreshCw className="h-4 w-4" /> Tentar novamente
           </button>
         </div>
       )}
 
-      {/* FLUJO PRINCIPAL DE CONTENIDO */}
+      {/* Conteúdo */}
       {!loading && !error && (
-        <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
-          {/* Listado de Entradas */}
-          <div className="space-y-6">
-            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-              <Ticket className="h-5 w-5 text-brand-gold" />
-              Os Meus Bilhetes / Encomendas
-            </h2>
+        <div className="space-y-10">
 
-            {/* 3. ESTADO DE TICKET NO ENCONTRADO O VACÍO (UNDEFINED / EMPTY ARRAY) */}
-            {!tickets || tickets.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-white/10 py-16 px-4 text-center">
-                <Ticket className="mx-auto h-10 w-10 text-white/20 mb-4" />
-                <h3 className="text-base font-semibold text-white">Nenhum bilhete encontrado</h3>
-                <p className="mt-2 text-sm text-white/40 max-w-xs mx-auto">
-                  Ainda não compraste bilhetes para nenhum evento. Explora a nossa página inicial!
-                </p>
-                <div className="mt-6">
-                  <Link
-                    href="/"
-                    className="inline-flex items-center justify-center rounded-xl bg-brand-red py-2.5 px-5 text-sm font-semibold text-white transition hover:bg-red-700 shadow-md shadow-brand-red/10"
-                  >
-                    Explorar Eventos
-                  </Link>
-                </div>
+          {/* ── Pagamentos pendentes ── */}
+          {pending.length > 0 && (
+            <section>
+              <div className="mb-4 flex items-center gap-3">
+                <Clock className="h-4 w-4 text-amber-400 animate-pulse" />
+                <h2 className="text-sm font-bold uppercase tracking-widest text-white/50">
+                  Aguarda Pagamento · {pending.length}
+                </h2>
               </div>
-            ) : (
-              /* Renderizado de la lista si contiene datos válidos */
-              tickets.map((ticket) => (
-                <div
-                  key={ticket.id}
-                  className="overflow-hidden rounded-2xl border border-white/5 bg-white/[0.01] transition hover:bg-white/[0.02]"
-                >
-                  <div className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-white/40">{ticket.date} • {ticket.city}</span>
-                        {ticket.status === "PAID" && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-brand-green/10 px-2.5 py-0.5 text-xs font-medium text-brand-green">
-                            <CheckCircle2 className="h-3 w-3" /> Confirmado
-                          </span>
-                        )}
-                        {(ticket.status === "PENDING_MULTIBANCO" || ticket.status === "PENDING_MBWAY") && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-500 animate-pulse">
-                            <Clock className="h-3 w-3" /> Aguarda Pagamento
-                          </span>
-                        )}
-                      </div>
-                      <h3 className="text-lg font-bold text-white">{ticket.eventTitle}</h3>
-                      <p className="text-sm text-white/60">{ticket.ticketName}</p>
-                    </div>
-
-                    <div className="sm:text-right flex sm:flex-col items-baseline sm:items-end justify-between sm:justify-center gap-2">
-                      <span className="text-xs text-white/40">Total pago</span>
-                      <span className="text-lg font-bold text-brand-gold">
-                        {ticket.price.toFixed(2)}€
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Detalles de Pago Multibanco */}
-                  {ticket && ticket.status === "PENDING_MULTIBANCO" && ticket.paymentDetails && (
-                    <div className="border-t border-white/5 bg-amber-950/10 p-5 sm:px-6">
-                      <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.02] p-4">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-amber-500 mb-3">
-                          <CreditCard className="h-4 w-4" />
-                          Pagamento por Multibanco (Ifthenpay API)
-                        </div>
-                        <p className="text-xs text-white/60 mb-4">
-                          Utiliza os dados abaixo no teu Homebanking ou numa caixa ATM dentro de {ticket.paymentDetails.expiresAt}.
-                        </p>
-                        <section className="grid gap-2 max-w-xs font-mono text-sm">
-                          {ticket.paymentDetails.entity && (<div className="flex justify-between items-center bg-black/40 p-2 rounded-lg">
-                            <span className="text-white/40 text-xs uppercase">Entidade:</span>
-                            <div className="flex items-center gap-2 font-bold text-white">
-                              <span>{ticket.paymentDetails.entity}</span>
-                              <button onClick={() => copyToClipboard(ticket.paymentDetails!.entity!)} className="text-white/40 hover:text-brand-gold"><Copy className="h-3.5 w-3.5" /></button>
-                            </div>
-                          </div>)}
-                          {ticket.paymentDetails!.reference && <div className="flex justify-between items-center bg-black/40 p-2 rounded-lg">
-                            <span className="text-white/40 text-xs uppercase">Referência:</span>
-                            <div className="flex items-center gap-2 font-bold text-white">
-                              <span>{ticket.paymentDetails.reference}</span>
-                              <button onClick={() => copyToClipboard(ticket.paymentDetails!.reference!)} className="text-white/40 hover:text-brand-gold"><Copy className="h-3.5 w-3.5" /></button>
-                            </div>
-                          </div>}
-                        </section>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Detalles de Pago MB WAY */}
-                  {ticket.status === "PENDING_MBWAY" && ticket.paymentDetails && (
-                    <div className="border-t border-white/5 bg-brand-red/5 p-5 sm:px-6">
-                      <div className="rounded-xl border border-brand-red/20 bg-brand-red/[0.02] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 text-sm font-semibold text-brand-red">
-                            <Smartphone className="h-4 w-4" />
-                            Notificação Push MB WAY enviada
-                          </div>
-                          <p className="text-xs text-white/60">
-                            Enviamos um pedido de autorização para o número <span className="text-white font-semibold">{ticket.paymentDetails.phone}</span>.
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => alert("Mockup: Efetuando chamada para a API Ifthenpay...")}
-                          className="shrink-0 rounded-xl bg-white/5 px-4 py-2 text-xs font-medium text-white ring-1 ring-white/10 hover:bg-white/10 transition"
-                        >
-                          Verificar Estado
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {ticket.status === "PAID" && (
-                    <div className="border-t border-white/5 bg-white/[0.01] p-4 px-5 sm:px-6 flex items-center justify-between text-xs text-white/40">
-                      <span>Código de Entrada: <span className="font-mono text-white/70 font-semibold">{ticket.code}</span></span>
-                      <button className="text-brand-gold hover:underline flex items-center gap-1">
-                        Descarregar PDF <ExternalLink className="h-3 w-3" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Sidebar Informativa */}
-          <div className="space-y-6">
-            <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5 space-y-4">
-              <h3 className="font-semibold text-white text-sm">Informação de Suporte</h3>
-              <p className="text-xs text-white/60 leading-relaxed">
-                Os pagamentos via <span className="text-white font-medium">MB WAY</span> expiram em 5 minutos.
-              </p>
-              <p className="text-xs text-white/60 leading-relaxed">
-                As referências de <span className="text-white font-medium">Multibanco</span> podem demorar até 5-10 minutos a serem processadas pelo teu banco.
-              </p>
-              <div className="border-t border-white/5 pt-3">
-                <span className="text-[10px] text-white/30 block">Gateway de Pagamento Seguro por</span>
-                <span className="text-xs text-brand-gold font-semibold tracking-wider uppercase">Ifthenpay Portugal</span>
+              <div className="space-y-3">
+                {pending.map((t) => <TicketCard key={t.id} ticket={t} />)}
               </div>
+            </section>
+          )}
+
+          {/* ── Bilhetes confirmados ── */}
+          {paid.length > 0 && (
+            <section>
+              <div className="mb-4 flex items-center gap-3">
+                <CheckCircle2 className="h-4 w-4 text-[#1a6b2f]" />
+                <h2 className="text-sm font-bold uppercase tracking-widest text-white/50">
+                  Bilhetes Confirmados · {paid.length}
+                </h2>
+              </div>
+              <div className="space-y-3">
+                {paid.map((t) => <TicketCard key={t.id} ticket={t} />)}
+              </div>
+            </section>
+          )}
+
+          {/* ── Sem bilhetes ── */}
+          {tickets && tickets.length === 0 && (
+            <div className="flex flex-col items-center py-20 text-center rounded-2xl border border-dashed border-white/[0.06]">
+              <Ticket className="h-10 w-10 text-white/10 mb-4" />
+              <h3 className="text-base font-bold text-white/60">Nenhum bilhete ainda</h3>
+              <p className="mt-1 text-sm text-white/30 max-w-xs">
+                Ainda não compraste bilhetes. Explora os nossos eventos!
+              </p>
+              <Link
+                href="/"
+                className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-[#c41e3a] px-6 py-2.5 text-sm font-bold uppercase tracking-wider text-white shadow-md shadow-red-900/30 transition hover:bg-[#a01830]"
+              >
+                Explorar Eventos
+              </Link>
             </div>
-          </div>
+          )}
+
+          {/* ── Outros (cancelados/expirados) ── */}
+          {other.length > 0 && (
+            <section>
+              <div className="mb-4 flex items-center gap-3">
+                <h2 className="text-xs font-bold uppercase tracking-widest text-white/20">
+                  Histórico · {other.length}
+                </h2>
+              </div>
+              <div className="space-y-3 opacity-50">
+                {other.map((t) => <TicketCard key={t.id} ticket={t} />)}
+              </div>
+            </section>
+          )}
         </div>
       )}
     </div>
