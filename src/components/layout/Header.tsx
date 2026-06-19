@@ -1,14 +1,15 @@
+
 import Link from "next/link";
 import Image from "next/image";
 import { User } from "lucide-react";
 
 export function Header() {
   return (
-    <header className="sticky top-0 z-50 border-b border-white/5 bg-[#0b0a08]/90 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2">
           {/* Contenedor del logo con dimensiones idénticas al diseño previo */}
-          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg shadow-md shadow-brand-red/10">
+          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg shadow-sm">
             <Image
               src="/traidos.jpg" // Asegúrate de que el archivo esté en la carpeta /public
               alt="Traiados Logo"
@@ -18,7 +19,7 @@ export function Header() {
               priority
             />
           </div>
-          <span className="text-xl font-bold tracking-tight text-white">
+          <span className="text-xl font-bold tracking-tight text-[#0b0a08]">
             Traiados <span className="text-brand-gold">Portugal</span>
           </span>
         </Link>
@@ -26,34 +27,94 @@ export function Header() {
         {/* <nav className="hidden items-center gap-8 md:flex">
           <Link
             href="/"
-            className="text-sm font-medium text-white/70 transition hover:text-brand-gold"
+            className="text-sm font-medium text-gray-600 transition hover:text-brand-gold"
           >
             Eventos
           </Link>
           <Link
             href="/"
-            className="text-sm font-medium text-white/70 transition hover:text-brand-gold"
+            className="text-sm font-medium text-gray-600 transition hover:text-brand-gold"
           >
             Categorias
           </Link>
         </nav> */}
 
-        <div className="flex items-center gap-3">
+        {/* <div className="flex items-center gap-3">
           <Link
             href="/login"
-            className="hidden rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white transition hover:border-brand-gold hover:text-brand-gold sm:inline-flex"
+            className="hidden rounded-full border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-brand-gold hover:text-brand-gold sm:inline-flex"
           >
             Entrar
           </Link>
           <Link
             href="/login"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-white transition hover:bg-brand-gold/20 hover:text-brand-gold"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-700 transition hover:bg-brand-gold/20 hover:text-brand-gold"
             aria-label="Conta"
           >
             <User className="h-4 w-4" />
           </Link>
-        </div>
+        </div> */}
       </div>
     </header>
   );
 }
+
+// import Link from "next/link";
+// import Image from "next/image";
+// import { User } from "lucide-react";
+
+// export function Header() {
+//   return (
+//     <header className="sticky top-0 z-50 border-b border-white/5 bg-[#0b0a08]/90 backdrop-blur-md">
+//       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+//         <Link href="/" className="flex items-center gap-2">
+//           {/* Contenedor del logo con dimensiones idénticas al diseño previo */}
+//           <div className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg shadow-md shadow-brand-red/10">
+//             <Image
+//               src="/traidos.jpg" // Asegúrate de que el archivo esté en la carpeta /public
+//               alt="Traiados Logo"
+//               fill
+//               className="object-cover"
+//               sizes="36px"
+//               priority
+//             />
+//           </div>
+//           <span className="text-xl font-bold tracking-tight text-white">
+//             Traiados <span className="text-brand-gold">Portugal</span>
+//           </span>
+//         </Link>
+
+//         <nav className="hidden items-center gap-8 md:flex">
+//           <Link
+//             href="/"
+//             className="text-sm font-medium text-white/70 transition hover:text-brand-gold"
+//           >
+//             Eventos
+//           </Link>
+//           <Link
+//             href="/"
+//             className="text-sm font-medium text-white/70 transition hover:text-brand-gold"
+//           >
+//             Categorias
+//           </Link>
+//         </nav>
+
+//         <div className="flex items-center gap-3">
+//           <Link
+//             href="/login"
+//             className="hidden rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white transition hover:border-brand-gold hover:text-brand-gold sm:inline-flex"
+//           >
+//             Entrar
+//           </Link>
+//           <Link
+//             href="/login"
+//             className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-white transition hover:bg-brand-gold/20 hover:text-brand-gold"
+//             aria-label="Conta"
+//           >
+//             <User className="h-4 w-4" />
+//           </Link>
+//         </div>
+//       </div>
+//     </header>
+//   );
+// }

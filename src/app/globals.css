@@ -1,16 +1,17 @@
 @import 'tailwindcss';
 
 :root {
-  --background: #0b0a08;
-  --foreground: #ffffff;
+  --background: #ffffff;
+  --foreground: #0b0a08;
 
   /* Cores das Bandeiras (Portugal/Brasil) + Dourado do Cartaz */
   --brand-red: #da251d; /* Vermelho vivo de Portugal para botões e ações principais */
   --brand-green: #009c3b; /* Verde bandeira do Brasil para elementos secundários e sucesso */
   --brand-gold: #f2ba13; /* Dourado quente dos cartazes para realces premium e preços */
 
-  --surface: rgba(255, 252, 240, 0.03);
-  --border: rgba(255, 252, 240, 0.08);
+  /* Ajustado para fondo claro */
+  --surface: rgba(11, 10, 8, 0.03);
+  --border: rgba(11, 10, 8, 0.08);
 }
 
 @theme inline {
@@ -30,7 +31,7 @@ body {
 }
 
 ::selection {
-  background: rgba(242, 186, 19, 0.3);
+  background: rgba(242, 186, 19, 0.2);
 }
 
 input[type='search']::-webkit-search-cancel-button {
