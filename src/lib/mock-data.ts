@@ -1,4 +1,4 @@
-import type { EventWithOrganizer } from "@/types/database";
+import type { EventWithOrganizer, } from "@/types/database";
 
 export const MOCK_EVENTS: EventWithOrganizer[] = [
   {
@@ -109,5 +109,98 @@ export const MOCK_EVENTS: EventWithOrganizer[] = [
       logo_url: null,
       verified: true,
     },
+  },
+];
+
+// NEWS LANDING
+
+export const EVENT = {
+  id: "noite-sertaneja-2025", // Añadimos un ID al evento para pasarlo por URL si es necesario
+  title: "NOITE SERTANEJA",
+  subtitle: "Grande Festa Brasileira",
+  date: "Sábado, 28 de Junho de 2025",
+  time: "23:00",
+  doors: "22:00",
+  location: "Club Panorâmico",
+  city: "Lisboa",
+  address: "Av. das Nações, Lisboa",
+  ageRestriction: "Maiores de 18 anos",
+  organizer: "Traiados Portugal",
+  organizerVerified: true,
+  description: `Uma noite inesquecível com o melhor do sertanejo universitário e raiz.
+  
+Junta o teu grupo e vem viver a energia contagiante que só a música brasileira consegue criar. Artistas ao vivo, ambiente premium e uma pista de dança que nunca para.
+
+Garante já o teu bilhete e sê parte desta noite épica.`,
+  imageUrl: "https://mmcfkordrwspwdbgmbmn.supabase.co/storage/v1/object/sign/imgs/IMG_0002.jpg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8yYTE4N2M0Yi04M2VmLTRlNzQtOTM4OS1jMDBkMGE0NDM0MmYiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWdzL0lNR18wMDAyLmpwZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODE3Mjc2MzAsImV4cCI6MTgxMzI2MzYzMH0.eJ_pGkEyf1X2BQ1XTqg9lwtSfzGyGpXnYxgtYVpVERA",
+  logoUrl: "/traidos.jpg",
+  artists: ["Banda Sertaneja", "DJ Caipira", "Convidados Especiais"],
+};
+
+interface TicketType {
+  id: string;
+  name: string;
+  description: string;
+  price: number | null;
+  timeLimit?: string;
+  badge?: string;
+  badgeColor?: "gold" | "green" | "red";
+  available: number;
+  includes?: string[];
+}
+
+export const TICKETS: TicketType[] = [
+  {
+    id: "convite-early",
+    name: "Convite Antecipado",
+    description:
+      "Entrada garantida até às 00:30. Após esse horário, sujeito a preço de porta com consumo mínimo de €10.",
+    price: 0,
+    timeLimit: "até às 00:30",
+    badge: "GRATUITO",
+    badgeColor: "green",
+    available: 40,
+    includes: [],
+  },
+  {
+    id: "entrada-elas",
+    name: "Entrada S/ Restrição – ELAS",
+    description: "Convite sem restrição de horário. Inclui 2 bebidas de oferta.",
+    price: 15,
+    badge: "ELAS",
+    badgeColor: "red",
+    available: 60,
+    includes: ["2 bebidas incluídas", "Sem restrição de horário"],
+  },
+  {
+    id: "entrada-eles",
+    name: "Entrada S/ Restrição – ELES",
+    description: "Convite sem restrição de horário. Inclui 1 bebida de oferta.",
+    price: 17.5,
+    badge: "ELES",
+    badgeColor: "gold",
+    available: 55,
+    includes: ["1 bebida incluída", "Sem restrição de horário"],
+  },
+  {
+    id: "vip-early",
+    name: "Convite VIP até 00:30",
+    description:
+      "Este convite VIP tem entrada até 00:30, caso não cumpra o horário de entrada será sujeito a pagar a diferença para o preço de porta. Esta entrada tem 2 bebidas de oferta para ELAS ou tem 1 bebida de oferta para ELES.",
+    price: 25,
+    timeLimit: "até 00:30",
+    badge: "VIP",
+    badgeColor: "gold",
+    available: 40,
+  },
+  {
+    id: "vip-full",
+    name: "Convite VIP S/Restrição de Horário",
+    description:
+      "Este convite VIP não possui restrição de horário. Esta entrada tem 2 bebidas de oferta para ELAS ou tem 1 bebida de oferta para ELES.",
+    price: 30,
+    badge: "VIP S/ RESTRIÇÃO",
+    badgeColor: "gold",
+    available: 15,
   },
 ];

@@ -2,35 +2,26 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation"; // 1. Importamos useRouter para la navegación
 import { useForm } from "react-hook-form";
 import {
   Calendar,
   MapPin,
   Clock,
-  ShieldCheck,
+  // ShieldCheck,
   Ticket,
   Users,
   ChevronDown,
   ChevronUp,
   BadgeCheck,
   Star,
-  ArrowRight,
+  // ArrowRight,
   X,
 } from "lucide-react";
+import { EVENT, TICKETS } from "@/lib/mock-data";
+import { useCartStore } from "@/store/useCartStore";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-
-interface TicketType {
-  id: string;
-  name: string;
-  description: string;
-  price: number | null;
-  timeLimit?: string;
-  badge?: string;
-  badgeColor?: "gold" | "green" | "red";
-  available: number;
-  includes?: string[];
-}
 
 interface ReservationFormData {
   phoneCode: string;
@@ -41,85 +32,6 @@ interface ReservationFormData {
   marketingConsent: boolean;
 }
 
-// ─── Mock data ───────────────────────────────────────────────────────────────
-
-const EVENT = {
-  title: "NOITE SERTANEJA",
-  subtitle: "Grande Festa Brasileira",
-  date: "Sábado, 28 de Junho de 2025",
-  time: "23:00",
-  doors: "22:00",
-  location: "Club Panorâmico",
-  city: "Lisboa",
-  address: "Av. das Nações, Lisboa",
-  ageRestriction: "Maiores de 18 anos",
-  organizer: "Traiados Portugal",
-  organizerVerified: true,
-  description: `Uma noite inesquecível com o melhor do sertanejo universitário e raiz.
-  
-Junta o teu grupo e vem viver a energia contagiante que só a música brasileira consegue criar. Artistas ao vivo, ambiente premium e uma pista de dança que nunca para.
-
-Garante já o teu bilhete e sê parte desta noite épica.`,
-  imageUrl: "https://mmcfkordrwspwdbgmbmn.supabase.co/storage/v1/object/sign/imgs/IMG_0002.jpg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8yYTE4N2M0Yi04M2VmLTRlNzQtOTM4OS1jMDBkMGE0NDM0MmYiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWdzL0lNR18wMDAyLmpwZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODE3Mjc2MzAsImV4cCI6MTgxMzI2MzYzMH0.eJ_pGkEyf1X2BQ1XTqg9lwtSfzGyGpXnYxgtYVpVERA",
-  logoUrl: "/traidos.jpg",
-  artists: ["Banda Sertaneja", "DJ Caipira", "Convidados Especiais"],
-};
-
-const TICKETS: TicketType[] = [
-  {
-    id: "convite-early",
-    name: "Convite Antecipado",
-    description:
-      "Entrada garantida até às 00:30. Após esse horário, sujeito a preço de porta com consumo mínimo de €10.",
-    price: 0,
-    timeLimit: "até às 00:30",
-    badge: "GRATUITO",
-    badgeColor: "green",
-    available: 40,
-    includes: [],
-  },
-  {
-    id: "entrada-elas",
-    name: "Entrada S/ Restrição – ELAS",
-    description: "Convite sem restrição de horário. Inclui 2 bebidas de oferta.",
-    price: 15,
-    badge: "ELAS",
-    badgeColor: "red",
-    available: 60,
-    includes: ["2 bebidas incluídas", "Sem restrição de horário"],
-  },
-  {
-    id: "entrada-eles",
-    name: "Entrada S/ Restrição – ELES",
-    description: "Convite sem restrição de horário. Inclui 1 bebida de oferta.",
-    price: 17.5,
-    badge: "ELES",
-    badgeColor: "gold",
-    available: 55,
-    includes: ["1 bebida incluída", "Sem restrição de horário"],
-  },
-  {
-    id: "vip-early",
-    name: "Convite VIP até 00:30",
-    description:
-      "Este convite VIP tem entrada até 00:30, caso não cumpra o horário de entrada será sujeito a pagar a diferença para o preço de porta. Esta entrada tem 2 bebidas de oferta para ELAS ou tem 1 bebida de oferta para ELES.",
-    price: 25,
-    timeLimit: "até 00:30",
-    badge: "VIP",
-    badgeColor: "gold",
-    available: 40,
-  },
-  {
-    id: "vip-full",
-    name: "Convite VIP S/Restrição de Horário",
-    description:
-      "Este convite VIP não possui restrição de horário. Esta entrada tem 2 bebidas de oferta para ELAS ou tem 1 bebida de oferta para ELES.",
-    price: 30,
-    badge: "VIP S/ RESTRIÇÃO",
-    badgeColor: "gold",
-    available: 15,
-  },
-];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -147,8 +59,10 @@ function BadgePill({ label, color }: { label: string; color?: "gold" | "green" |
 }
 
 export default function EventLanding() {
-  const [selectedQuantities, setSelectedQuantities] = useState<Record<string, number>>({});
+  const router = useRouter(); // Initialize router
+  // const [selectedQuantities, setSelectedQuantities] = useState<Record<string, number>>({});
   const [expandedTickets, setExpandedTickets] = useState<Record<string, boolean>>({});
+  const { items, updateQuantity, setUserInfo, getTotalItems } = useCartStore();
 
   // Estados para el Modal de Reserva
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -172,19 +86,30 @@ export default function EventLanding() {
     },
   });
 
-  const handleQtyChange = (id: string, delta: number, max: number) => {
-    setSelectedQuantities((prev) => {
-      const current = prev[id] || 0;
-      const next = Math.min(max, Math.max(0, current + delta));
-      return { ...prev, [id]: next };
-    });
+  const handleQtyChange = (
+    id: string,
+    name: string,
+    price: number | null,
+    delta: number,
+    max: number
+  ) => {
+    // 1. Buscamos la cantidad actual que tiene este ticket en Zustand
+    const currentQty = items[id]?.quantity || 0;
+
+    // 2. Calculamos la nueva cantidad limitándola entre 0 y el stock disponible (max)
+    const nextQty = Math.min(max, Math.max(0, currentQty + delta));
+
+    // 3. Enviamos la actualización directamente a la tienda de Zustand
+    // Si el precio es null (por ejemplo si es gratuito o a consultar), enviamos 0
+    updateQuantity(id, nextQty, name, price || 0);
   };
 
   const toggleExpand = (id: string) => {
     setExpandedTickets((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const totalTicketsSelected = Object.values(selectedQuantities).reduce((a, b) => a + b, 0);
+  // const totalTicketsSelected = Object.values(items).reduce((a, b) => a + b, 0);
+  const totalTicketsSelected = getTotalItems();
 
   // Manejo de avance de paso con validación parcial preventiva
   const handleNextStep = async () => {
@@ -194,16 +119,16 @@ export default function EventLanding() {
     }
   };
 
-  // Envío final del Formulario
+  // Envío final del Formulario y Redirección Conectada
   const onFormSubmit = (data: ReservationFormData) => {
-    console.log("Reserva Completada con Éxito:", {
-      tickets: selectedQuantities,
-      userData: data,
-    });
-    // Aquí ejecutas la lógica de tu API
+    setUserInfo(data);
+
     setIsModalOpen(false);
     setModalStep(1);
     reset();
+
+    // Redirigimos sin parámetros pesados en la URL, todo viaja seguro en Zustand
+    router.push(`/checkout`);
   };
 
   const closeModal = () => {
@@ -312,7 +237,7 @@ export default function EventLanding() {
 
               <div className="space-y-4">
                 {TICKETS.map((ticket) => {
-                  const qty = selectedQuantities[ticket.id] || 0;
+                  const qty = items[ticket.id]?.quantity || 0;;
                   const isExpanded = expandedTickets[ticket.id] || false;
                   const soldOut = ticket.available <= 0;
 
@@ -328,14 +253,14 @@ export default function EventLanding() {
                         </div>
 
                         <div className="flex items-center gap-3 bg-white border border-gray-200/80 rounded-xl p-1 shadow-sm shrink-0">
-                          <button onClick={() => handleQtyChange(ticket.id, -1, ticket.available)} disabled={qty === 0 || soldOut} className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 bg-gray-50 font-bold hover:bg-gray-100 transition disabled:opacity-20">−</button>
+                          <button onClick={() => handleQtyChange(ticket.id, ticket.name, ticket.price, -1, ticket.available)} disabled={qty === 0 || soldOut} className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 bg-gray-50 font-bold hover:bg-gray-100 transition disabled:opacity-20">−</button>
                           <span className="min-w-[1rem] text-center text-xs font-black text-gray-800">{qty}</span>
-                          <button onClick={() => handleQtyChange(ticket.id, 1, ticket.available)} disabled={soldOut} className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0b0a08] text-white font-bold hover:bg-gray-800 transition disabled:opacity-20">+</button>
+                          <button onClick={() => handleQtyChange(ticket.id, ticket.name, ticket.price, 1, ticket.available)} disabled={soldOut} className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0b0a08] text-white font-bold hover:bg-gray-800 transition disabled:opacity-20">+</button>
                         </div>
                       </div>
 
                       <button onClick={() => toggleExpand(ticket.id)} className="mt-2.5 flex items-center gap-1 text-[11px] font-bold text-gray-400 hover:text-gray-600 transition-colors">
-                        {isExpanded ? <><ChevronUp className="h-3 w-3" /> Ocultar descrição</> : <><ChevronDown className="h-3 w-3" /> Ver descrição</>}
+                        {isExpanded ? <><ChevronUp className="h-3 w-3" /> Ocultar descrição</> : <><ChevronDown className="h-3 w-3" /> Ver descripción</>}
                       </button>
 
                       {isExpanded && <p className="mt-2 text-xs leading-relaxed text-gray-500 font-medium border-t border-gray-200/60 pt-2">{ticket.description}</p>}
@@ -367,7 +292,7 @@ export default function EventLanding() {
 
       {/* ── MODAL DE RESERVA (MULTI-STEP CONTROLLER) ── */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="relative w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto">
 
             {/* Botón cerrar */}
@@ -393,7 +318,7 @@ export default function EventLanding() {
 
             <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
 
-              {/* ── PASO 1: TELEMÓVEL ── */}
+              {/* PASO 1: TELEMÓVEL */}
               {modalStep === 1 && (
                 <div className="space-y-4 animate-fade-in">
                   <div>
@@ -419,7 +344,6 @@ export default function EventLanding() {
                           required: "O número de telemóvel é obrigatório",
                           pattern: {
                             value: /^[0-9\s-]{9,15}$/,
-
                             message: "Número de telemóvel inválido"
                           }
                         })}
@@ -437,14 +361,14 @@ export default function EventLanding() {
                   <button
                     type="button"
                     onClick={handleNextStep}
-                    className="w-full bg-[#0b0a08] hover:bg-gray-800 text-white font-bold text-xs uppercase tracking-widest py-3.5 rounded-xl transition shadow-md shadow-black/5 mt-2"
+                    className="w-full bg-[#0b0a08] hover:bg-gray-800 text-white font-bold text-xs uppercase tracking-widest py-3.5 rounded-xl transition shadow-md mt-2"
                   >
                     Continuar
                   </button>
                 </div>
               )}
 
-              {/* ── PASO 2: DATOS PERSONALES ── */}
+              {/* PASO 2: DATOS PERSONALES */}
               {modalStep === 2 && (
                 <div className="space-y-4 animate-fade-in">
 

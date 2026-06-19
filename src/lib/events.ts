@@ -52,7 +52,7 @@ export async function getEventById(
 ): Promise<EventWithTickets | null> {
   if (!isSupabaseConfigured()) {
     const event = MOCK_EVENTS.find((e) => e.id === id);
-    console.log({ MOCK_EVENTS })
+
     if (!event) return null;
     return { ...event, ticket_types: getMockTicketTypes(id) };
   }

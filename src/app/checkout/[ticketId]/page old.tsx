@@ -1,3 +1,4 @@
+
 /**
  * app/checkout/[ticketId]/page.tsx
  *
@@ -11,7 +12,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { getEventById } from "@/lib/events";
-import { CheckoutClient } from "./CheckoutClient";
+import { CheckoutClient } from "./CheckoutClient old";
 import dayjs from "dayjs";
 
 interface CheckoutPageProps {
