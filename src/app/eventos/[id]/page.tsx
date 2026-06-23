@@ -152,7 +152,7 @@ export default async function EventPage({ params }: EventPageProps) {
                           </p>
                         </div>
                         <p className="text-lg font-black text-brand-gold">
-                          {formatPrice(ticket.price)}
+                          {formatPrice(ticket.price ?? 0)}
                         </p>
                       </div>
 
