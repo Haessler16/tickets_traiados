@@ -95,7 +95,7 @@ export default async function CheckoutPage({
           orderId={orderId}
           eventTitle={event.title}
           ticketName={ticket.name}
-          amount={ticket.price}
+          amount={ticket.price!}
         />
 
         {/* Sidebar com garantias */}

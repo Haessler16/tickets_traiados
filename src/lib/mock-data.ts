@@ -115,7 +115,7 @@ export const MOCK_EVENTS: EventWithOrganizer[] = [
 // NEWS LANDING
 
 export const EVENT = {
-  id: "noite-sertaneja-2025", // Añadimos un ID al evento para pasarlo por URL si es necesario
+  id: "b0000000-0000-4000-8000-000000000099", // Añadimos un ID al evento para pasarlo por URL si es necesario
   title: "NOITE SERTANEJA",
   subtitle: "Grande Festa Brasileira",
   date: "Sábado, 28 de Junho de 2025",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation"; // 1. Importamos useRouter para la navegación
 import { useForm } from "react-hook-form";
@@ -18,8 +18,10 @@ import {
   // ArrowRight,
   X,
 } from "lucide-react";
-import { EVENT, TICKETS } from "@/lib/mock-data";
+import { EVENT } from "@/lib/mock-data";
 import { useCartStore } from "@/store/useCartStore";
+import { getEventTickets } from "@/lib/events";
+import { TicketType } from "@/types/database";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -31,7 +33,6 @@ interface ReservationFormData {
   birthDate: string;
   marketingConsent: boolean;
 }
-
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -60,9 +61,12 @@ function BadgePill({ label, color }: { label: string; color?: "gold" | "green" |
 
 export default function EventLanding() {
   const router = useRouter(); // Initialize router
-  // const [selectedQuantities, setSelectedQuantities] = useState<Record<string, number>>({});
+
   const [expandedTickets, setExpandedTickets] = useState<Record<string, boolean>>({});
   const { items, updateQuantity, setUserInfo, getTotalItems } = useCartStore();
+
+  const [dbTickets, setDbTickets] = useState<TicketType[]>([]);
+  const [isLoadingTickets, setIsLoadingTickets] = useState(true);
 
   // Estados para el Modal de Reserva
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -85,6 +89,17 @@ export default function EventLanding() {
       marketingConsent: false,
     },
   });
+
+  useEffect(() => {
+    async function loadTickets() {
+      setIsLoadingTickets(true);
+      // Fetch tickets for this specific event ID
+      const fetchedTickets = await getEventTickets(EVENT.id);
+      setDbTickets(fetchedTickets);
+      setIsLoadingTickets(false);
+    }
+    loadTickets();
+  }, []);
 
   const handleQtyChange = (
     id: string,
@@ -231,42 +246,47 @@ export default function EventLanding() {
                   <p className="mt-0.5 text-[11px] text-gray-400 font-medium">Selecione as suas entradas para este evento.</p>
                 </div>
                 <div className="flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-[11px] font-bold text-gray-600">
-                  <Users className="h-3 w-3" /> {TICKETS.reduce((s, t) => s + t.available, 0)} vagas
+                  <Users className="h-3 w-3" /> {dbTickets.reduce((s, t) => s + t.stock_total, 0)} vagas
                 </div>
               </div>
 
               <div className="space-y-4">
-                {TICKETS.map((ticket) => {
-                  const qty = items[ticket.id]?.quantity || 0;;
-                  const isExpanded = expandedTickets[ticket.id] || false;
-                  const soldOut = ticket.available <= 0;
+                {isLoadingTickets ? (
+                  <p className="text-center text-gray-500 text-sm py-4">A carregar bilhetes...</p>
+                ) : (
+                  dbTickets.map((ticket) => {
+                    const qty = items[ticket.id]?.quantity || 0;
+                    const isExpanded = expandedTickets[ticket.id] || false;
+                    // Calculate dynamic availability
+                    const available = ticket.stock_total - ticket.stock_sold;
+                    const soldOut = available <= 0;
 
-                  return (
-                    <div key={ticket.id} className={cn("rounded-2xl border border-gray-100 bg-gray-50/50 p-4 transition-all", qty > 0 && "border-gray-300 bg-gray-50 shadow-sm", soldOut && "opacity-50 grayscale select-none")}>
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2 mb-1">
-                            {ticket.badge && <BadgePill label={ticket.badge} color={ticket.badgeColor} />}
+                    return (
+                      <div key={ticket.id} className={cn("rounded-2xl border border-gray-100 bg-gray-50/50 p-4 transition-all", qty > 0 && "border-gray-300 bg-gray-50 shadow-sm", soldOut && "opacity-50 grayscale select-none")}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-1">
+                              {ticket.badge && <BadgePill label={ticket.badge} color={ticket.badge_color ?? undefined} />}
+                            </div>
+                            <p className="font-bold text-gray-800 text-sm leading-snug">{ticket.name}</p>
+                            <p className="text-[11px] text-gray-400 font-bold mt-0.5">{formatPrice(ticket.price)}</p>
                           </div>
-                          <p className="font-bold text-gray-800 text-sm leading-snug">{ticket.name}</p>
-                          <p className="text-[11px] text-gray-400 font-bold mt-0.5">{formatPrice(ticket.price)}</p>
+
+                          <div className="flex items-center gap-3 bg-white border border-gray-200/80 rounded-xl p-1 shadow-sm shrink-0">
+                            <button onClick={() => handleQtyChange(ticket.id, ticket.name, ticket.price, -1, available)} disabled={qty === 0 || soldOut} className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 bg-gray-50 font-bold hover:bg-gray-100 transition disabled:opacity-20">−</button>
+                            <span className="min-w-[1rem] text-center text-xs font-black text-gray-800">{qty}</span>
+                            <button onClick={() => handleQtyChange(ticket.id, ticket.name, ticket.price, 1, available)} disabled={soldOut} className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0b0a08] text-white font-bold hover:bg-gray-800 transition disabled:opacity-20">+</button>
+                          </div>
                         </div>
 
-                        <div className="flex items-center gap-3 bg-white border border-gray-200/80 rounded-xl p-1 shadow-sm shrink-0">
-                          <button onClick={() => handleQtyChange(ticket.id, ticket.name, ticket.price, -1, ticket.available)} disabled={qty === 0 || soldOut} className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 bg-gray-50 font-bold hover:bg-gray-100 transition disabled:opacity-20">−</button>
-                          <span className="min-w-[1rem] text-center text-xs font-black text-gray-800">{qty}</span>
-                          <button onClick={() => handleQtyChange(ticket.id, ticket.name, ticket.price, 1, ticket.available)} disabled={soldOut} className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0b0a08] text-white font-bold hover:bg-gray-800 transition disabled:opacity-20">+</button>
-                        </div>
+                        <button onClick={() => toggleExpand(ticket.id)} className="mt-2.5 flex items-center gap-1 text-[11px] font-bold text-gray-400 hover:text-gray-600 transition-colors">
+                          {isExpanded ? <><ChevronUp className="h-3 w-3" /> Ocultar descrição</> : <><ChevronDown className="h-3 w-3" /> Ver descripción</>}
+                        </button>
+
+                        {isExpanded && <p className="mt-2 text-xs leading-relaxed text-gray-500 font-medium border-t border-gray-200/60 pt-2">{ticket.description}</p>}
                       </div>
-
-                      <button onClick={() => toggleExpand(ticket.id)} className="mt-2.5 flex items-center gap-1 text-[11px] font-bold text-gray-400 hover:text-gray-600 transition-colors">
-                        {isExpanded ? <><ChevronUp className="h-3 w-3" /> Ocultar descrição</> : <><ChevronDown className="h-3 w-3" /> Ver descripción</>}
-                      </button>
-
-                      {isExpanded && <p className="mt-2 text-xs leading-relaxed text-gray-500 font-medium border-t border-gray-200/60 pt-2">{ticket.description}</p>}
-                    </div>
-                  );
-                })}
+                    );
+                  }))}
               </div>
             </div>
           </div>

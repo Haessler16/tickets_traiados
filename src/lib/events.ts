@@ -1,6 +1,7 @@
+"use server";
 import { createClient } from "@/lib/supabase/server";
-import { MOCK_EVENTS } from "@/lib/mock-data";
-import type { EventWithOrganizer, EventWithTickets } from "@/types/database";
+import { MOCK_EVENTS, TICKETS } from "@/lib/mock-data";
+import type { EventWithOrganizer, EventWithTickets, TicketType } from "@/types/database";
 
 function isSupabaseConfigured(): boolean {
   return Boolean(
@@ -54,7 +55,7 @@ export async function getEventById(
     const event = MOCK_EVENTS.find((e) => e.id === id);
 
     if (!event) return null;
-    return { ...event, ticket_types: getMockTicketTypes(id) };
+    return { ...event, ticket_types: getMockTicketTypes(id) as unknown as TicketType[] };
   }
 
   const supabase = await createClient();
@@ -66,6 +67,27 @@ export async function getEventById(
 
   if (error || !data) return null;
   return data as EventWithTickets;
+}
+
+export async function getEventTickets(eventId: string): Promise<TicketType[]> {
+  "use server";
+  if (!isSupabaseConfigured()) {
+    return TICKETS as unknown as TicketType[]; // Fallback to mock
+  }
+
+  const supabase = await createClient();
+  const { data, error, statusText } = await supabase
+    .from("ticket_types")
+    .select("*")
+    .eq("event_id", eventId)
+    .order("price", { ascending: true }); // Order by price or however you prefer
+
+  if (error || !data) {
+    console.error("Error fetching tickets:", error);
+    return [];
+  }
+
+  return data;
 }
 
 function filterMockEvents(
