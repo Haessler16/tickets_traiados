@@ -109,7 +109,7 @@ export default function EventLanding() {
   };
 
   // const totalTicketsSelected = Object.values(items).reduce((a, b) => a + b, 0);
-  const totalTicketsSelected = getTotalItems();
+  const totalTicketsSelected = getTotalItems() ?? 0;
 
   // Manejo de avance de paso con validación parcial preventiva
   const handleNextStep = async () => {
@@ -302,8 +302,16 @@ export default function EventLanding() {
 
             {/* Logo de cabecera idéntico al diseño */}
             <div className="flex justify-center mb-4 mt-2">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#0b0a08] text-white font-black text-xl tracking-tight shadow-md">
-                Σ3
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#0b0a08] text-white font-black text-xl tracking-tight shadow-md">
+                <Image
+                  src={EVENT.logoUrl}
+                  alt={EVENT.title}
+                  height={56}
+                  width={56}
+                  priority
+                  className="object-cover object-center"
+
+                />
               </div>
             </div>
 

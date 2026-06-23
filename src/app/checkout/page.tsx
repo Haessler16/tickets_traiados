@@ -161,7 +161,7 @@ export default function CheckoutPage() {
               {/* Insignia de seguridad oficial */}
               <div className="flex items-start gap-2 rounded-xl bg-[#009c3b]/5 p-3 text-[11px] font-bold text-[#009c3b] ring-1 ring-[#009c3b]/10">
                 <ShieldCheck className="h-4 w-4 shrink-0 mt-0.5" />
-                Garantia de transação 100% segura através da criptografia da Ifthenpay.
+                Garantia de transação 100% segura através da criptografia da Paypal.
               </div>
             </div>
           </div>
